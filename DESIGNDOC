@@ -1,0 +1,113 @@
+Working Title: Community Dashboard
+
+### **1. Executive Summary**
+**Project Goal:** To provide a localized, completely free application that allows users to create, track, and share highly visual daily dashboards. The app helps users manage their cognitive load by visualizing daily goals (e.g., water intake, work tasks, exercise) in a highly customizable format.
+**Monetization:** 100% Free. No premium tiers. A single, unobtrusive donation link (e.g., in the settings or footer).
+**Target Platforms:** iOS, Android, and Desktop Web (Chrome), with a primary focus on the mobile experience.
+
+---
+
+### **2. Tech Stack & Architecture**
+* **Framework:** React Native with Expo (Managed Workflow for easy deployment to iOS, Android, and Web).
+* **State Management:** Zustand (lightweight, unopinionated, and highly performant).
+* **Local Storage:** `zustand/middleware` utilizing `AsyncStorage` (React Native) with seamless fallback to `localStorage` for the Chrome Web build. No external databases (Supabase, Firebase, etc.) will be used.
+* **Data Visualization:** `react-native-svg` paired with a library like `victory-native` or standard animated React Native `View` components for progress rings and bars.
+* **Template Compression:** `lz-string` or a similar compression library. *(Note on terminology: The prompt mentions exporting a "hash." Since hashes are one-way cryptographic functions, the app will actually use Base64 encoding or a compressed string representation of the JSON data to generate a short, shareable text code).*
+
+---
+
+### **3. Data Models**
+Because all data lives locally, the app will rely on structured JSON objects saved to the device. 
+
+**3.1. Dashboard Item Model**
+```json
+{
+  "id": "uuid-v4",
+  "title": "Water Intake",
+  "currentValue": 8,
+  "targetValue": 16,
+  "unit": "glasses",
+  "visualType": "progressRing", 
+  "colorTheme": "#3498db",
+  "resetInterval": "daily",
+  "lastUpdated": "2026-04-02T10:00:00Z"
+}
+```
+
+**3.2. Template Model (For Export/Import)**
+When a user exports a template, sensitive/current data is stripped, leaving only the structural blueprint.
+```json
+{
+  "templateName": "Hydration Station",
+  "dashboards": [
+    {
+      "title": "Water Intake",
+      "targetValue": 16,
+      "unit": "glasses",
+      "visualType": "progressRing",
+      "colorTheme": "#3498db"
+    }
+  ]
+}
+```
+
+---
+
+### **4. User Interface (UI) & User Experience (UX)**
+
+#### **4.1. Core Screens**
+* **Home/Daily View (The Main Hub):** * A vertically scrollable list or grid of active dashboards.
+    * Each card features the visual element (e.g., a filling circle), the title, and large, easily tappable **[ + ]** and **[ - ]** buttons to adjust the `currentValue`.
+    * **Master Tally:** Pinned at the absolute bottom of the screen (or as a sticky footer). This displays a global percentage or fraction (e.g., "3 / 5 Goals Met Today") summing up all dashboards where `currentValue >= targetValue`.
+* **Dashboard Creator:** * Form to input Title, Target Number, Unit (optional), and select the Visual Style (Bar chart, Ring, Counter).
+    * Option to "Save as Template" during creation.
+* **Template Hub (Import/Export):**
+    * List of saved templates.
+    * "Export" button that generates the compressed string (e.g., `lz-string` encoded base64) and copies it to the clipboard.
+    * "Import" text input field where users can paste a string shared by a friend to instantly populate a new dashboard.
+* **Settings:**
+    * Dark/Light mode toggles.
+    * Clear all data/Reset app.
+    * The "Buy me a coffee" / Donate link.
+
+#### **4.2. UI Design Principles**
+* **Mobile-First Touch Targets:** The **+** and **-** buttons must be large enough to hit without looking closely, minimizing friction when logging data.
+* **Visual Feedback:** When a value is updated, the chart should animate to its new state rather than snapping, providing a satisfying dopamine hit for the user. 
+* **Web Responsiveness:** On Desktop Chrome, the mobile layout should elegantly constrain to a maximum width (e.g., `maxWidth: 600`) centered on the screen, rather than stretching awkwardly across a wide monitor.
+
+---
+
+### **5. Core Logic & Implementation Details**
+
+#### **5.1. The "Hash" Sharing Mechanism**
+To allow users to share templates without a server:
+1.  User clicks "Share Template".
+2.  App takes the Template JSON object.
+3.  App runs `JSON.stringify()`.
+4.  App compresses the string using `lz-string` to keep the code short and manageable.
+5.  User shares the resulting string (e.g., `AwGghgTglgxgNgewJwFMIQA4FMAO2QGciwBjAEwEMBzAQwAtsR1riQ==`).
+6.  The receiving user pastes it into the "Import" field, the app decompresses it, parses the JSON, and builds the dashboard.
+
+#### **5.2. Master Tally Calculation**
+A derived state function will run whenever a dashboard value changes. 
+```javascript
+const calculateMasterTally = (dashboards) => {
+  const completed = dashboards.filter(d => d.currentValue >= d.targetValue).length;
+  const total = dashboards.length;
+  return { completed, total, percentage: (completed / total) * 100 };
+};
+```
+
+#### **5.3. Daily Reset Logic**
+Since there is no server cron job to reset values at midnight, the app will check the timestamps on launch or foregrounding. 
+* On app load, check the `lastUpdated` timestamp of the dashboards against the current device date. 
+* If the date is different (e.g., a new day has started), trigger an action to reset the `currentValue` of all dashboards to `0`.
+
+---
+
+### **6. Development Milestones**
+1.  **Phase 1: Foundation.** Initialize Expo router, set up Zustand with AsyncStorage, build the data models.
+2.  **Phase 2: Core UX.** Build the Home screen, the Create Dashboard form, and the increment/decrement logic.
+3.  **Phase 3: Visualization.** Integrate the graphing/charting library to render the progress rings/bars based on state. 
+4.  **Phase 4: Export/Import.** Implement the compression library and the string-sharing feature.
+5.  **Phase 5: Polish.** Add the Master Tally logic, daily reset triggers, animations, and finalize web-responsive styling.
