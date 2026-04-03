@@ -148,7 +148,10 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    paddingBottom: 32, // Normal padding at bottom
+    paddingBottom: 32,
+    width: '100%',
+    maxWidth: 800,
+    alignSelf: 'center',
   },
   label: {
     fontSize: 16,

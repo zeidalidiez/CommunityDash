@@ -49,10 +49,13 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 16,
     paddingBottom: 32,
+    alignItems: 'center',
   },
   card: {
-    padding: 24,
-    borderRadius: 20,
+    width: '100%',
+    maxWidth: 800,
+    padding: 32,
+    borderRadius: 24,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
     shadowRadius: 10,

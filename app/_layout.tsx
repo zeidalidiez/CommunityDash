@@ -60,7 +60,6 @@ const styles = StyleSheet.create({
   webContainer: {
     flex: 1,
     width: '100%',
-    maxWidth: Platform.OS === 'web' ? 600 : '100%',
     marginHorizontal: 'auto',
     overflow: 'hidden',
   },

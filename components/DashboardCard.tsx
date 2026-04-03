@@ -145,7 +145,7 @@ export default function DashboardCard({ item, onIncrement, onDecrement, onDelete
               activeOpacity={0.7}
             >
               <Palette color={colors.textSecondary} size={18} />
-              <Text style={[styles.visualSelectorBtnText, { color: colors.textSecondary }]}>Change Visual Style</Text>
+              <Text style={[styles.visualSelectorBtnText, { color: colors.textSecondary }]}>Visual</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -154,7 +154,7 @@ export default function DashboardCard({ item, onIncrement, onDecrement, onDelete
               activeOpacity={0.7}
             >
               <Trash2 color={colors.danger} size={20} />
-              <Text style={[styles.deleteText, { color: colors.danger }]}>Delete Goal</Text>
+              <Text style={[styles.deleteText, { color: colors.danger }]}>Delete</Text>
             </TouchableOpacity>
           </View>
         )}

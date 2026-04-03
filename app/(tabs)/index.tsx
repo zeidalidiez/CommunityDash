@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, FlatList, SafeAreaView } from 'react-native';
+import React, { useMemo } from 'react';
+import { View, Text, StyleSheet, FlatList, SafeAreaView, useWindowDimensions } from 'react-native';
 import { useDashboardStore } from '../../store/dashboardStore';
 import DashboardCard from '../../components/DashboardCard';
 import { Link } from 'expo-router';
@@ -8,10 +8,20 @@ import { Activity } from 'lucide-react-native';
 
 export default function DailyScreen() {
   const { colors, isDark } = useAppTheme();
+  const { width } = useWindowDimensions();
   const dashboards = useDashboardStore((state) => state.dashboards);
   const incrementValue = useDashboardStore((state) => state.incrementValue);
   const decrementValue = useDashboardStore((state) => state.decrementValue);
   const removeDashboard = useDashboardStore((state) => state.removeDashboard);
+
+  // Determine number of columns based on width
+  const numColumns = useMemo(() => {
+    if (width >= 1500) return 5;
+    if (width >= 1200) return 4;
+    if (width >= 900) return 3;
+    if (width >= 600) return 2;
+    return 1;
+  }, [width]);
 
   const completed = dashboards.filter((d) => d.currentValue >= d.targetValue).length;
   const total = dashboards.length;
@@ -32,16 +42,21 @@ export default function DailyScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <FlatList
+        key={`grid-${numColumns}`} // Force re-render when columns change
+        numColumns={numColumns}
         data={dashboards}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <DashboardCard
-            item={item}
-            onIncrement={() => incrementValue(item.id)}
-            onDecrement={() => decrementValue(item.id)}
-            onDelete={() => removeDashboard(item.id)}
-          />
+          <View style={[styles.cardWrapper, { width: `${100 / numColumns}%` }]}>
+            <DashboardCard
+              item={item}
+              onIncrement={() => incrementValue(item.id)}
+              onDecrement={() => decrementValue(item.id)}
+              onDelete={() => removeDashboard(item.id)}
+            />
+          </View>
         )}
+        columnWrapperStyle={numColumns > 1 ? styles.columnWrapper : undefined}
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={
           <View style={styles.heroSection}>
@@ -56,12 +71,14 @@ export default function DailyScreen() {
         }
       />
 
-      <View style={[styles.tallyContainer, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
-        <Text style={[styles.tallyText, { color: colors.text }]}>
-          {completed} / {total} Goals Met
-        </Text>
-        <View style={[styles.progressBarBackground, { backgroundColor: isDark ? '#333' : '#e6e6e6' }]}>
-          <View style={[styles.progressBarFill, { width: `${percentage}%`, backgroundColor: colors.success }]} />
+      <View style={[styles.tallyWrapper]}>
+        <View style={[styles.tallyContainer, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
+          <Text style={[styles.tallyText, { color: colors.text }]}>
+            {completed} / {total} Goals Met
+          </Text>
+          <View style={[styles.progressBarBackground, { backgroundColor: isDark ? '#333' : '#e6e6e6' }]}>
+            <View style={[styles.progressBarFill, { width: `${percentage}%`, backgroundColor: colors.success }]} />
+          </View>
         </View>
       </View>
     </SafeAreaView>
@@ -73,6 +90,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   heroSection: {
+    width: '100%',
     paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 24,
@@ -95,13 +113,26 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   listContent: {
-    paddingBottom: 100, // padding for the floating tally
+    paddingBottom: 140, // padding for the floating tally
+  },
+  columnWrapper: {
+    justifyContent: 'flex-start',
+    paddingHorizontal: 8,
+  },
+  cardWrapper: {
+    padding: 0, // DashboardCard has its own margins
+  },
+  tallyWrapper: {
+    position: 'absolute',
+    bottom: 24,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    paddingHorizontal: 16,
   },
   tallyContainer: {
-    position: 'absolute',
-    bottom: 24, // Floating slightly above the bottom boundary
-    left: 16,
-    right: 16,
+    width: '100%',
+    maxWidth: 600, // Constrain tally width on desktop
     padding: 16,
     borderRadius: 16,
     borderWidth: 1,

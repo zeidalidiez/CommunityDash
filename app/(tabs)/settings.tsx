@@ -33,53 +33,55 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Appearance</Text>
-        <View style={[styles.themeRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          {themeOptions.map((option) => {
-            const Icon = option.icon;
-            const isActive = theme === option.value;
-            return (
-              <TouchableOpacity
-                key={option.value}
-                style={[
-                  styles.themeButton,
-                  isActive && { backgroundColor: `${colors.primary}20` },
-                ]}
-                onPress={() => setTheme(option.value)}
-              >
-                <Icon color={isActive ? colors.primary : colors.textSecondary} size={24} />
-                <Text style={[
-                  styles.themeButtonText,
-                  { color: isActive ? colors.primary : colors.textSecondary }
-                ]}>
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+      <View style={styles.settingsWrapper}>
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Appearance</Text>
+          <View style={[styles.themeRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            {themeOptions.map((option) => {
+              const Icon = option.icon;
+              const isActive = theme === option.value;
+              return (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[
+                    styles.themeButton,
+                    isActive && { backgroundColor: `${colors.primary}20` },
+                  ]}
+                  onPress={() => setTheme(option.value)}
+                >
+                  <Icon color={isActive ? colors.primary : colors.textSecondary} size={24} />
+                  <Text style={[
+                    styles.themeButtonText,
+                    { color: isActive ? colors.primary : colors.textSecondary }
+                  ]}>
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
-      </View>
 
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Data</Text>
-        <TouchableOpacity 
-          style={[styles.dangerButton, { backgroundColor: colors.card, borderColor: colors.danger }]} 
-          onPress={handleClearAll}
-        >
-          <Trash2 color={colors.danger} size={20} />
-          <Text style={[styles.dangerButtonText, { color: colors.danger }]}>Erase All App Data</Text>
-        </TouchableOpacity>
-        <Text style={styles.hintText}>This action cannot be undone.</Text>
-      </View>
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Data</Text>
+          <TouchableOpacity 
+            style={[styles.dangerButton, { backgroundColor: colors.card, borderColor: colors.danger }]} 
+            onPress={handleClearAll}
+          >
+            <Trash2 color={colors.danger} size={20} />
+            <Text style={[styles.dangerButtonText, { color: colors.danger }]}>Erase All App Data</Text>
+          </TouchableOpacity>
+          <Text style={styles.hintText}>This action cannot be undone.</Text>
+        </View>
 
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Support</Text>
-        <TouchableOpacity style={styles.donateButton} onPress={openDonate}>
-          <Heart color="#fff" size={20} />
-          <Text style={styles.donateButtonText}>Buy the dev a coffee</Text>
-        </TouchableOpacity>
-        <Text style={styles.hintText}>CommunityDash is 100% free forever.</Text>
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Support</Text>
+          <TouchableOpacity style={styles.donateButton} onPress={openDonate}>
+            <Heart color="#fff" size={20} />
+            <Text style={styles.donateButtonText}>Buy the dev a coffee</Text>
+          </TouchableOpacity>
+          <Text style={styles.hintText}>CommunityDash is 100% free forever.</Text>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -89,6 +91,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    alignItems: 'center',
+  },
+  settingsWrapper: {
+    width: '100%',
+    maxWidth: 800,
   },
   section: {
     marginBottom: 32,
