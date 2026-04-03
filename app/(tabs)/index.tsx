@@ -1,10 +1,9 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, SafeAreaView, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, FlatList, SafeAreaView, useWindowDimensions, Image } from 'react-native';
 import { useDashboardStore } from '../../store/dashboardStore';
 import DashboardCard from '../../components/DashboardCard';
 import { Link } from 'expo-router';
 import { useAppTheme } from '../../hooks/useAppTheme';
-import { Activity } from 'lucide-react-native';
 
 export default function DailyScreen() {
   const { colors, isDark } = useAppTheme();
@@ -30,7 +29,11 @@ export default function DailyScreen() {
   if (dashboards.length === 0) {
     return (
       <SafeAreaView style={[styles.emptyContainer, { backgroundColor: colors.background }]}>
-        <Activity size={64} color={colors.primary} style={{ marginBottom: 24, opacity: 0.8 }} />
+        <Image 
+          source={require('../../assets/images/communitydashlogo.png')} 
+          style={{ width: 100, height: 100, marginBottom: 24, opacity: 0.8 }}
+          resizeMode="contain"
+        />
         <Text style={[styles.emptyText, { color: colors.textSecondary }]}>You have no dashboards yet.</Text>
         <Link href="/create" style={[styles.emptyLink, { backgroundColor: colors.primary }]}>
           <Text style={styles.emptyLinkText}>Create your first dashboard</Text>
@@ -61,7 +64,11 @@ export default function DailyScreen() {
         ListHeaderComponent={
           <View style={styles.heroSection}>
             <View style={[styles.heroIcon, { backgroundColor: `${colors.primary}20` }]}>
-              <Activity size={32} color={colors.primary} />
+              <Image 
+                source={require('../../assets/images/communitydashlogo.png')} 
+                style={{ width: 40, height: 40 }}
+                resizeMode="contain"
+              />
             </View>
             <Text style={[styles.heroTitle, { color: colors.text }]}>Hello there!</Text>
             <Text style={[styles.heroSubtitle, { color: colors.textSecondary }]}>

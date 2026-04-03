@@ -1,7 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, Image, Linking } from 'react-native';
+import { Image, Linking, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAppTheme } from '../../hooks/useAppTheme';
-import { LayoutDashboard } from 'lucide-react-native';
 
 export default function AboutScreen() {
   const { colors } = useAppTheme();
@@ -12,15 +11,18 @@ export default function AboutScreen() {
         <View style={[styles.card, { backgroundColor: colors.card }]}>
           <View style={styles.header}>
             <View style={[styles.logoContainer, { backgroundColor: `${colors.primary}20` }]}>
-              <LayoutDashboard color={colors.primary} size={48} />
+              <Image 
+                source={require('../../assets/images/communitydashlogo.png')} 
+                style={{ width: 60, height: 60 }}
+                resizeMode="contain"
+              />
             </View>
             <Text style={[styles.title, { color: colors.text }]}>CommunityDash</Text>
             <Text style={[styles.version, { color: colors.textSecondary }]}>Version 1.0.0</Text>
           </View>
 
           <Text style={[styles.bodyText, { color: colors.text }]}>
-            I created this tool because I couldn't remember all of the things I told myself I'd try to do in a given day. Any existing tools I found included too many distractions for me that I ended up getting lost in the sauce. I thought others may benefit too.
-          </Text>
+            I created this tool after struggling to find a simple, free dashboard that was not so feature rich as to be distracting or overwhelming to me in my use case, which was simple dashboards to track things like water consumption and exercise. I was hoping others could benefit from the same.  </Text>
 
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
@@ -36,6 +38,25 @@ export default function AboutScreen() {
               Open Source
             </Text>
           </Text>
+
+          <View style={[styles.qaSection, { borderColor: colors.border }]}>
+            <Text style={[styles.qaText, { color: colors.textSecondary }]}>
+              Looking for the world's best QA team? Check out{' '}
+              <Text 
+                style={{ color: colors.primary, fontWeight: 'bold' }} 
+                onPress={() => Linking.openURL('https://topnotchqa.com')}
+              >
+                Top Notch
+              </Text>
+            </Text>
+            <View style={styles.qaLogoContainer}>
+              <Image 
+                source={{ uri: 'https://topnotchqa.com/wp-content/uploads/2018/05/tn-logo-small-white.png' }} 
+                style={styles.qaLogo}
+                resizeMode="contain"
+              />
+            </View>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -94,5 +115,26 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 14,
     marginBottom: 8,
+  },
+  qaSection: {
+    marginTop: 32,
+    paddingTop: 24,
+    borderTopWidth: 1,
+    alignItems: 'center',
+    width: '100%',
+  },
+  qaText: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  qaLogoContainer: {
+    backgroundColor: '#1a1a1a',
+    padding: 12,
+    borderRadius: 12,
+  },
+  qaLogo: {
+    width: 120,
+    height: 40,
   }
 });

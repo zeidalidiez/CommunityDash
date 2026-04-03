@@ -1,7 +1,7 @@
 import { Slot, usePathname, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, Platform, SafeAreaView, ScrollView, LayoutAnimation, UIManager } from 'react-native';
-import { Home, PlusCircle, Share2, Settings as SettingsIcon, LayoutDashboard, Info, ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { View, StyleSheet, TouchableOpacity, Text, Platform, SafeAreaView, ScrollView, LayoutAnimation, UIManager, Image } from 'react-native';
+import { Home, PlusCircle, Share2, Settings as SettingsIcon, Info, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { useAppTheme } from '@/hooks/useAppTheme';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -49,9 +49,12 @@ export default function AppLayout() {
           {!isCollapsed && (
             <>
               <View style={styles.logoContainer}>
-                <LayoutDashboard color={colors.primary} size={32} />
+                <Image 
+                  source={require('../../assets/images/communitydashlogo.png')} 
+                  style={{ width: 40, height: 40 }}
+                  resizeMode="contain"
+                />
               </View>
-
               <ScrollView contentContainerStyle={styles.navContainer} showsVerticalScrollIndicator={false}>
                 {navItems.map((item) => {
                   const Icon = item.icon;
