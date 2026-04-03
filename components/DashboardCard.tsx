@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Pressable, LayoutAnimation, Platform, UIManager, Alert, ScrollView, Modal } from 'react-native';
 import { DashboardItem, useDashboardStore, VisualType } from '../store/dashboardStore';
-import ProgressRing from './ProgressRing';
-import { SegmentedSteps, StepJourney, StarRating, ColorCircle, Speedometer } from './Visualizations';
+import { LiquidWave, NeonGlowRing, BatteryCore, GradientBar, PizzaSlices, SunHorizon, Hourglass, RadarScope } from './Visualizations';
 import { Minus, Plus, Trash2, Palette } from 'lucide-react-native';
 import { useAppTheme } from '../hooks/useAppTheme';
 
@@ -20,13 +19,14 @@ interface DashboardCardProps {
 }
 
 const VISUAL_TYPES: { label: string; value: VisualType }[] = [
-  { label: 'Ring', value: 'progressRing' },
-  { label: 'Counter', value: 'counter' },
-  { label: 'Steps', value: 'segmentedSteps' },
-  { label: 'Journey', value: 'stepJourney' },
-  { label: 'Stars', value: 'starRating' },
-  { label: 'Gauge', value: 'speedometer' },
-  { label: 'Color Shift', value: 'colorCircle' },
+  { label: 'Liquid Wave', value: 'liquidWave' },
+  { label: 'Neon Glow', value: 'neonGlow' },
+  { label: 'Battery', value: 'batteryCore' },
+  { label: 'Gradient Bar', value: 'gradientBar' },
+  { label: 'Pizza Slices', value: 'pizzaSlices' },
+  { label: 'Sun Horizon', value: 'sunHorizon' },
+  { label: 'Hourglass', value: 'hourglass' },
+  { label: 'Radar Scope', value: 'radarScope' },
 ];
 
 export default function DashboardCard({ item, onIncrement, onDecrement, onDelete }: DashboardCardProps) {
@@ -78,22 +78,23 @@ export default function DashboardCard({ item, onIncrement, onDecrement, onDelete
     const tColor = isDark ? '#333' : '#e6e6e6';
     
     switch(item.visualType) {
-      case 'segmentedSteps':
-        return <SegmentedSteps progress={progress} color={actualColor} trackColor={tColor} targetValue={item.targetValue} />;
-      case 'stepJourney':
-        return <StepJourney progress={progress} color={actualColor} trackColor={tColor} targetValue={item.targetValue} />;
-      case 'starRating':
-        return <StarRating progress={progress} color={actualColor} trackColor={tColor} targetValue={item.targetValue} />;
-      case 'speedometer':
-        return <Speedometer progress={progress} color={actualColor} trackColor={tColor} targetValue={item.targetValue} />;
-      case 'colorCircle':
-        return <ColorCircle progress={progress} color={actualColor} trackColor={tColor} targetValue={item.targetValue} />;
-      case 'progressRing':
+      case 'neonGlow':
+        return <NeonGlowRing progress={progress} color={actualColor} trackColor={tColor} targetValue={item.targetValue} />;
+      case 'batteryCore':
+        return <BatteryCore progress={progress} color={actualColor} trackColor={tColor} targetValue={item.targetValue} />;
+      case 'gradientBar':
+        return <GradientBar progress={progress} color={actualColor} trackColor={tColor} targetValue={item.targetValue} />;
+      case 'pizzaSlices':
+        return <PizzaSlices progress={progress} color={actualColor} trackColor={tColor} targetValue={item.targetValue} />;
+      case 'sunHorizon':
+        return <SunHorizon progress={progress} color={actualColor} trackColor={tColor} targetValue={item.targetValue} />;
+      case 'hourglass':
+        return <Hourglass progress={progress} color={actualColor} trackColor={tColor} targetValue={item.targetValue} />;
+      case 'radarScope':
+        return <RadarScope progress={progress} color={actualColor} trackColor={tColor} targetValue={item.targetValue} />;
+      case 'liquidWave':
       default:
-        if (item.visualType === 'counter') {
-          return <Text style={[styles.counterText, { color: actualColor }]}>{Math.round(progress * 100)}%</Text>;
-        }
-        return <ProgressRing radius={48} strokeWidth={10} progress={progress} color={actualColor} trackColor={tColor} />;
+        return <LiquidWave progress={progress} color={actualColor} trackColor={tColor} targetValue={item.targetValue} />;
     }
   };
 

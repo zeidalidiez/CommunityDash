@@ -6,13 +6,14 @@ import { useAppTheme } from '../../hooks/useAppTheme';
 
 const COLORS = ['#3498db', '#e74c3c', '#2ecc71', '#f1c40f', '#9b59b6', '#34495e'];
 const VISUAL_TYPES: { label: string; value: VisualType }[] = [
-  { label: 'Ring', value: 'progressRing' },
-  { label: 'Counter', value: 'counter' },
-  { label: 'Steps', value: 'segmentedSteps' },
-  { label: 'Journey', value: 'stepJourney' },
-  { label: 'Stars', value: 'starRating' },
-  { label: 'Gauge', value: 'speedometer' },
-  { label: 'Color Shift', value: 'colorCircle' },
+  { label: 'Liquid Wave', value: 'liquidWave' },
+  { label: 'Neon Glow', value: 'neonGlow' },
+  { label: 'Battery', value: 'batteryCore' },
+  { label: 'Gradient Bar', value: 'gradientBar' },
+  { label: 'Pizza Slices', value: 'pizzaSlices' },
+  { label: 'Sun Horizon', value: 'sunHorizon' },
+  { label: 'Hourglass', value: 'hourglass' },
+  { label: 'Radar Scope', value: 'radarScope' },
 ];
 
 export default function CreateScreen() {
@@ -24,7 +25,7 @@ export default function CreateScreen() {
   const [title, setTitle] = useState('');
   const [targetValue, setTargetValue] = useState('10');
   const [unit, setUnit] = useState('');
-  const [visualType, setVisualType] = useState<VisualType>('progressRing');
+  const [visualType, setVisualType] = useState<VisualType>('liquidWave');
   const [colorTheme, setColorTheme] = useState(COLORS[0]);
 
   const handleSave = () => {
@@ -58,7 +59,7 @@ export default function CreateScreen() {
     setTitle('');
     setTargetValue('10');
     setUnit('');
-    setVisualType('progressRing');
+    setVisualType('liquidWave');
     setColorTheme(COLORS[0]);
 
     router.replace('/');

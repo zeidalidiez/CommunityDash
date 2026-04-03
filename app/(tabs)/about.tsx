@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, Image } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, Image, Linking } from 'react-native';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { LayoutDashboard } from 'lucide-react-native';
 
@@ -28,7 +28,13 @@ export default function AboutScreen() {
             Built with React Native & Expo
           </Text>
           <Text style={[styles.footerText, { color: colors.textSecondary }]}>
-            100% Free & Open Source
+            100% Free &{' '}
+            <Text 
+              style={{ color: colors.primary, textDecorationLine: 'underline' }} 
+              onPress={() => Linking.openURL('https://github.com/zeidalidiez/CommunityDash')}
+            >
+              Open Source
+            </Text>
           </Text>
         </View>
       </ScrollView>

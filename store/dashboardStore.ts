@@ -3,7 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 
-export type VisualType = 'progressRing' | 'counter' | 'segmentedSteps' | 'stepJourney' | 'starRating' | 'speedometer' | 'colorCircle';
+export type VisualType = 'liquidWave' | 'neonGlow' | 'batteryCore' | 'gradientBar' | 'pizzaSlices' | 'sunHorizon' | 'hourglass' | 'radarScope';
 export type ThemeMode = 'system' | 'light' | 'dark';
 
 export interface DashboardItem {
