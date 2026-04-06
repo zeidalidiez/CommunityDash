@@ -23,6 +23,7 @@
     },
     "web": {
       "output": "static",
+      "trailingSlash": true,
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
