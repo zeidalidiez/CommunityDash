@@ -1,113 +1,464 @@
-Working Title: Community Dashboard
+# CommunityDash — Product & Design Spec (v1 Baseline)
 
-### **1. Executive Summary**
-**Project Goal:** To provide a localized, completely free application that allows users to create, track, and share highly visual daily dashboards. The app helps users manage their cognitive load by visualizing daily goals (e.g., water intake, work tasks, exercise) in a highly customizable format.
-**Monetization:** 100% Free. No premium tiers. A single, unobtrusive donation link (e.g., in the settings or footer).
-**Target Platforms:** iOS, Android, and Desktop Web (Chrome), with a primary focus on the mobile experience.
-
----
-
-### **2. Tech Stack & Architecture**
-* **Framework:** React Native with Expo (Managed Workflow for easy deployment to iOS, Android, and Web).
-* **State Management:** Zustand (lightweight, unopinionated, and highly performant).
-* **Local Storage:** `zustand/middleware` utilizing `AsyncStorage` (React Native) with seamless fallback to `localStorage` for the Chrome Web build. No external databases (Supabase, Firebase, etc.) will be used.
-* **Data Visualization:** `react-native-svg` paired with a library like `victory-native` or standard animated React Native `View` components for progress rings and bars.
-* **Template Compression:** `lz-string` or a similar compression library. *(Note on terminology: The prompt mentions exporting a "hash." Since hashes are one-way cryptographic functions, the app will actually use Base64 encoding or a compressed string representation of the JSON data to generate a short, shareable text code).*
+**Working title:** CommunityDash  
+**Status:** Spec for v1 baseline (current codebase is a partial prototype; About’s “1.0.0” is aspirational)  
+**Last updated:** 2026-07-08
 
 ---
 
-### **3. Data Models**
-Because all data lives locally, the app will rely on structured JSON objects saved to the device. 
+## 1. Executive summary
 
-**3.1. Dashboard Item Model**
-```json
+### Goal
+A **localized, completely free** app for creating, tracking, and sharing **highly visual daily dashboards**. Users manage cognitive load by turning simple goals (water, exercise, tasks) into glanceable progress visuals—not a bloated habit OS.
+
+### Non-negotiables
+| Principle | Decision |
+|-----------|----------|
+| Price | **100% free forever.** No premium tiers, ads, or freemium. |
+| Backend | **None required.** Local-first; no accounts, no SaaS dependency. |
+| Support | Single unobtrusive donation link (**Ko-fi — do not change**). |
+| Hosting model | Offline / on-device primary. **Public web deploy = GitHub Pages only** (free static hosting). No Vercel / Cloudflare / Netlify plan. |
+| Open source | Public repo; community-friendly. |
+
+### Target platforms (priority)
+1. **Web (desktop + mobile browser)** — ship and polish first  
+2. **Android / iOS** via Expo (same codebase; after web baseline is solid)  
+3. Desktop install is optional later (PWA / Tauri / etc.—not v1)
+
+### Product one-liner
+> Local daily goals with beautiful visuals, history you can look back on, and shareable templates—no account, no cloud tax.
+
+---
+
+## 2. Product decisions (locked for v1)
+
+| Topic | Decision |
+|-------|----------|
+| Data residency | On-device (AsyncStorage / localStorage). Optional static hosting only serves the app shell; user data never leaves the browser/device unless the user exports it. |
+| Daily progress history | **Full history charts** — retain completion data over time (not “today only”). |
+| Reuse | **Both** goal **history** (reuse single past goals) **and** named multi-goal **templates**. |
+| Navigation | Responsive: **mobile-native chrome** (bottom tabs) on narrow viewports; **sidebar** (or rail) on wide layouts. |
+| Over target | **Allowed.** Visuals and UI must show overflow (e.g. 12/10) clearly. |
+| Scope of v1 | **Baseline product** with the features in this doc—not a thin demo. |
+| Sacred | Free forever · no required backend · Ko-fi link unchanged. Everything else may be revitalized. |
+
+---
+
+## 3. Tech stack & architecture
+
+### Stack
+| Layer | Choice | Notes |
+|-------|--------|--------|
+| Framework | React Native + Expo (managed) | One codebase → web, iOS, Android |
+| Routing | Expo Router | File-based routes |
+| State | Zustand + `persist` | Lightweight, works well offline |
+| Storage | AsyncStorage (native) / localStorage (web via AsyncStorage polyfill) | No remote DB |
+| Graphics | `react-native-svg` + custom visualizations | Prefer custom over heavy chart libs for brand/feel |
+| Animation | Reanimated (already in tree) | Progress transitions, not snap-jumps |
+| Template share | `lz-string` (compress → Base64 string) | “Hash” in casual speech = **share code**, not cryptographic hash |
+| IDs | `expo-crypto` random UUID | |
+
+### Architecture principles
+- **Client-only.** All business logic runs in the app.
+- **Static deployable.** `expo export` produces a static site for **GitHub Pages**.
+- **No silent cloud.** If we ever add optional sync later, it must be opt-in and never required for core use. **Not in v1.**
+- **Schema versioning.** Persisted state includes a `schemaVersion` so migrations are possible as models evolve.
+- **Privacy by design.** No analytics SDKs, no auth, no third-party tracking in v1.
+
+### Web deploy path (locked)
+**Public hosting: GitHub Pages only** — free, public, fits OSS, no scaling plan for other platforms.
+
+We are **not** planning Vercel, Cloudflare Pages, Netlify, or similar. Those may have free tiers; we do not want another vendor relationship or “scale when free tier ends” path. GitHub Pages is the product’s public web home.
+
+Why web first (still):
+- Free public URL without app stores.
+- Fast iteration and sharing (“open this URL”).
+- Clipboard + keyboard UX easier to validate early.
+- Stores (Apple/Google) add signing, review, and update lag; do them after the product baseline is real.
+
+Concrete pipeline (v1 ops):
+1. `npx expo export --platform web` → static `dist/`
+2. Publish `dist/` to **GitHub Pages** (Actions workflow and/or `gh-pages` branch / `docs` — pick one and document it in README)
+3. Respect repo base path if needed (project site vs user site) and existing `trailingSlash` settings in `app.json`
+4. PWA-ish later: service worker + “Add to Home Screen” optional post-v1 polish
+
+**Also not in scope:** custom Node server, Firebase, or anything that implies “the product lives in our cloud.” The app remains a static client; user data stays in the browser.
+
+---
+
+## 4. Data models
+
+All data lives in structured JSON on device. Include `schemaVersion` at the root of persisted store.
+
+### 4.1 Dashboard item (active goal)
+```ts
 {
-  "id": "uuid-v4",
-  "title": "Water Intake",
-  "currentValue": 8,
-  "targetValue": 16,
-  "unit": "glasses",
-  "visualType": "progressRing", 
-  "colorTheme": "#3498db",
-  "resetInterval": "daily",
-  "lastUpdated": "2026-04-02T10:00:00Z"
+  id: string;                 // uuid
+  title: string;
+  currentValue: number;       // may exceed targetValue
+  targetValue: number;        // > 0
+  stepSize: number;           // default 1; used by + / -
+  unit: string;               // optional display, e.g. "glasses"
+  visualType: VisualType;
+  colorTheme: string;         // hex
+  resetInterval: 'daily';     // v1: daily only; field reserved for later
+  createdAt: string;          // ISO
+  lastUpdated: string;        // ISO — last interaction, not reset marker alone
+  sortOrder: number;          // for manual reorder
 }
 ```
 
-**3.2. Template Model (For Export/Import)**
-When a user exports a template, sensitive/current data is stripped, leaving only the structural blueprint.
+**Visual types (v1 keep/extend as branded set):**  
+`liquidWave` | `neonGlow` | `batteryCore` | `gradientBar` | `pizzaSlices` | `sunHorizon` | `hourglass` | `radarScope`
+
+### 4.2 Daily snapshot (history charts)
+On each **local calendar day** boundary (and after meaningful updates), persist per-goal and aggregate stats.
+
+```ts
+// One row per calendar day (device local timezone)
+{
+  date: string;               // "YYYY-MM-DD" local
+  goals: {
+    [dashboardId: string]: {
+      title: string;          // snapshot title for historical accuracy
+      currentValue: number;
+      targetValue: number;
+      unit: string;
+      completed: boolean;     // currentValue >= targetValue at end-of-day or last write
+      colorTheme?: string;
+    };
+  };
+  completedCount: number;
+  totalCount: number;
+  percentage: number;         // completedCount / totalCount * 100
+}
+```
+
+**Retention (v1):** keep **all** daily snapshots (user’s machine; full history charts). Provide Settings action: “Clear history” separate from “Erase all data.” Cap only if storage becomes an issue (document a soft warning > ~2 years later—not a hard product limit in v1).
+
+### 4.3 Goal history (reuse single goals)
+Auto-captured blueprints when a user creates a goal (or explicitly “save to history”).
+
+```ts
+{
+  id: string;
+  title: string;
+  targetValue: number;
+  stepSize: number;
+  unit: string;
+  visualType: VisualType;
+  colorTheme: string;
+  lastUsedAt: string;         // ISO
+}
+```
+
+**Rules:**
+- Deduplicate by normalized title + target + unit + visual + color + step (or soft-dedupe by title with update).
+- Cap list length (e.g. 50) with LRU eviction, or unlimited with search—**prefer cap 100 + search** for sanity.
+
+### 4.4 Named template (multi-goal blueprint)
+User-named packs of goals for personal reuse and sharing.
+
+```ts
+{
+  id: string;
+  templateName: string;
+  createdAt: string;
+  dashboards: TemplateItem[]; // structure only — no currentValue
+}
+
+// TemplateItem
+{
+  title: string;
+  targetValue: number;
+  stepSize: number;
+  unit: string;
+  visualType: VisualType;
+  colorTheme: string;
+}
+```
+
+**Export/import payload** (share code content after decompress):
 ```json
 {
+  "v": 1,
   "templateName": "Hydration Station",
-  "dashboards": [
-    {
-      "title": "Water Intake",
-      "targetValue": 16,
-      "unit": "glasses",
-      "visualType": "progressRing",
-      "colorTheme": "#3498db"
-    }
-  ]
+  "dashboards": [ /* TemplateItem[] */ ]
 }
 ```
 
----
-
-### **4. User Interface (UI) & User Experience (UX)**
-
-#### **4.1. Core Screens**
-* **Home/Daily View (The Main Hub):** * A vertically scrollable list or grid of active dashboards.
-    * Each card features the visual element (e.g., a filling circle), the title, and large, easily tappable **[ + ]** and **[ - ]** buttons to adjust the `currentValue`.
-    * **Master Tally:** Pinned at the absolute bottom of the screen (or as a sticky footer). This displays a global percentage or fraction (e.g., "3 / 5 Goals Met Today") summing up all dashboards where `currentValue >= targetValue`.
-* **Dashboard Creator:** * Form to input Title, Target Number, Unit (optional), and select the Visual Style (Bar chart, Ring, Counter).
-    * Option to "Save as Template" during creation.
-* **Template Hub (Import/Export):**
-    * List of saved templates.
-    * "Export" button that generates the compressed string (e.g., `lz-string` encoded base64) and copies it to the clipboard.
-    * "Import" text input field where users can paste a string shared by a friend to instantly populate a new dashboard.
-* **Settings:**
-    * Dark/Light mode toggles.
-    * Clear all data/Reset app.
-    * The "Buy me a coffee" / Donate link.
-
-#### **4.2. UI Design Principles**
-* **Mobile-First Touch Targets:** The **+** and **-** buttons must be large enough to hit without looking closely, minimizing friction when logging data.
-* **Visual Feedback:** When a value is updated, the chart should animate to its new state rather than snapping, providing a satisfying dopamine hit for the user. 
-* **Web Responsiveness:** On Desktop Chrome, the mobile layout should elegantly constrain to a maximum width (e.g., `maxWidth: 600`) centered on the screen, rather than stretching awkwardly across a wide monitor.
+Strip `id`, `currentValue`, `lastUpdated`, history. Validate on import (types, positive targets, known visual types with fallback).
 
 ---
 
-### **5. Core Logic & Implementation Details**
+## 5. Core product behavior
 
-#### **5.1. The "Hash" Sharing Mechanism**
-To allow users to share templates without a server:
-1.  User clicks "Share Template".
-2.  App takes the Template JSON object.
-3.  App runs `JSON.stringify()`.
-4.  App compresses the string using `lz-string` to keep the code short and manageable.
-5.  User shares the resulting string (e.g., `AwGghgTglgxgNgewJwFMIQA4FMAO2QGciwBjAEwEMBzAQwAtsR1riQ==`).
-6.  The receiving user pastes it into the "Import" field, the app decompresses it, parses the JSON, and builds the dashboard.
+### 5.1 Home / Daily view
+- Grid/list of active dashboard cards (responsive columns).
+- Each card: visual, title, `current / target unit`, large **+** / **−** (uses `stepSize`).
+- **Master tally** sticky/floating: `completed / total` goals met today + progress bar.
+- Empty state: logo + CTA to create first goal.
+- Card expand: edit shortcut, change visual, delete (confirm).
+- **Overflow:** if `currentValue > targetValue`, show clearly (e.g. `12 / 10`, visual fill ≥ 100% with overflow cue—ring wraps, bar glow, “+20%” badge, etc.).
 
-#### **5.2. Master Tally Calculation**
-A derived state function will run whenever a dashboard value changes. 
-```javascript
-const calculateMasterTally = (dashboards) => {
-  const completed = dashboards.filter(d => d.currentValue >= d.targetValue).length;
-  const total = dashboards.length;
-  return { completed, total, percentage: (completed / total) * 100 };
-};
+### 5.2 Create & edit goal
+**Create** form:
+- Title, target, unit (optional), step size (default 1), visual style, color.
+- Actions: Create · Create & save to history (default on) · optional “also add to new/existing template.”
+
+**Edit** (missing in prototype; **required for v1**):
+- Same fields as create; changing target does not retroactively rewrite past daily snapshots.
+
+### 5.3 Increment / decrement
+- `+` adds `stepSize`, `-` subtracts `stepSize`.
+- Floor at `0`; **no ceiling** at target (overflow allowed).
+- Update `lastUpdated`; write-through to today’s daily snapshot.
+
+### 5.4 Daily reset + history write
+No server cron. On launch / foreground / midnight while open:
+
+1. Determine **local calendar date** `YYYY-MM-DD`.
+2. If last processed date ≠ today:
+   - Finalize **yesterday’s** snapshot from last known values (if not already finalized).
+   - Reset each daily goal’s `currentValue` to `0` for the new day.
+   - Start today’s snapshot with zeros / current structure.
+3. Track `lastResetDate` in store so we don’t double-reset.
+
+**Do not** abuse `lastUpdated` as the only reset signal; use an explicit app-level `lastResetDate` plus snapshots.
+
+### 5.5 History charts (full history)
+Dedicated **History** surface (tab or section):
+- Aggregate: % goals met over time (line/bar by day).
+- Per-goal: sparklines or selectable goal series.
+- Day detail: drill into a date → list of goals and values that day.
+- Empty states for “not enough data yet.”
+
+v1 charting: keep dependency-light (SVG / simple paths). Avoid heavy analytics suites.
+
+### 5.6 Templates hub
+Combine three concerns in one hub (tabs or stacked sections):
+
+1. **Previous goals (history)** — reuse / delete single blueprints.  
+2. **My templates** — named multi-goal packs: create from current dashboards, rename, delete, apply (import into active list).  
+3. **Share** — export selected template (or current setup as ad-hoc template) to clipboard share code; import paste field + validation errors.
+
+Export UX:
+- Prefer **system share sheet** on native; clipboard on web.
+- Show truncated code + “Copied” confirmation.
+- Optional later: QR encode of share string (nice-to-have, not blocking v1).
+
+### 5.7 Settings
+- Appearance: System / Light / Dark.
+- Data:
+  - Export all data (JSON file/string) — user backup for self-host peace of mind.
+  - Clear **history only**.
+  - Erase **all app data** (dashboards + history + templates + snapshots)—true full wipe, with confirm.
+- Support: **Buy the dev a coffee** → existing Ko-fi URL (**do not change**).
+- About link / version string tied to real releases.
+
+### 5.8 About
+- Honest versioning for v1 baseline when shipped.
+- Free & open source + GitHub link.
+- Keep personal mission tone; trim “1.0.0 done” until baseline criteria met.
+- Third-party shoutouts optional; don’t block product work.
+
+---
+
+## 6. UI / UX principles
+
+### Mobile-first touch
+- **+** / **−** minimum ~48–56dp hit targets.
+- Bottom **tab bar** on narrow screens (Home, Create, Hub, History, Settings).
+- Wide screens: collapsible **sidebar** + multi-column goal grid (current direction is fine).
+
+### Visual feedback
+- Animate progress changes (Reanimated / layout animations)—no cold snaps when values change.
+- Completion state: subtle success tint on card.
+- Overflow state: distinct from “exactly 100%” (e.g. accent ring, “Over target” chip).
+
+### Web layout
+- Content max width where reading matters (forms ~720–800px).
+- Dashboard grid can span wider (2–5 columns by breakpoint)—not forced to 600px phone column on desktop.
+- Static web: fix deprecated Clipboard usage (`expo-clipboard`); ensure paste import works on all major browsers.
+
+### Accessibility (v1 minimum)
+- Text labels on icon-only buttons.
+- Sufficient contrast in light/dark.
+- Don’t rely on color alone for completed vs incomplete.
+
+### Theming
+- Centralized tokens (`useAppTheme` / theme constants).
+- User preference persisted; respect system when set to System.
+
+---
+
+## 7. Navigation map (v1)
+
+```
+Home (Daily)          — active goals + master tally
+Create / Edit         — form (edit via route params or modal)
+Hub                   — Previous goals | Templates | Import-Export
+History               — charts + day drill-down
+Settings              — theme, data, Ko-fi
+About                 — story, OSS, version
 ```
 
-#### **5.3. Daily Reset Logic**
-Since there is no server cron job to reset values at midnight, the app will check the timestamps on launch or foregrounding. 
-* On app load, check the `lastUpdated` timestamp of the dashboards against the current device date. 
-* If the date is different (e.g., a new day has started), trigger an action to reset the `currentValue` of all dashboards to `0`.
+Narrow: bottom tabs (About under Settings or Hub overflow).  
+Wide: sidebar labels matching the same destinations.
 
 ---
 
-### **6. Development Milestones**
-1.  **Phase 1: Foundation.** Initialize Expo router, set up Zustand with AsyncStorage, build the data models.
-2.  **Phase 2: Core UX.** Build the Home screen, the Create Dashboard form, and the increment/decrement logic.
-3.  **Phase 3: Visualization.** Integrate the graphing/charting library to render the progress rings/bars based on state. 
-4.  **Phase 4: Export/Import.** Implement the compression library and the string-sharing feature.
-5.  **Phase 5: Polish.** Add the Master Tally logic, daily reset triggers, animations, and finalize web-responsive styling.
+## 8. Sharing mechanism (detail)
+
+1. User selects a **named template** (or “current dashboards as template”).
+2. Build versioned JSON (`v: 1`).
+3. `JSON.stringify` → `LZString.compressToBase64`.
+4. Copy / share string.
+5. Receiver pastes into Import → decompress → validate → `importTemplate` (append new goals with fresh IDs, `currentValue: 0`).
+
+**Import rules:**
+- Unknown `visualType` → fallback `liquidWave`.
+- Invalid numbers / empty title → reject item or whole payload with clear error.
+- Never overwrite existing goals silently; **append** (optionally “replace all” behind explicit confirm later).
+
+---
+
+## 9. Gaps in current prototype (fix truth for revitalization)
+
+Treat the current app as a **spike**. v1 must close:
+
+| Area | Current state | v1 need |
+|------|---------------|---------|
+| Docs | DESIGNDOC outdated; README is Expo boilerplate | This spec + real README |
+| Edit goal | Missing | Full edit |
+| Step size | Always 1 | Configurable |
+| Over target | Hard-capped | Allowed + visual overflow |
+| Templates | Export-all only; no named packs | Named templates + export selection |
+| Goal history | Exists but no dedupe/cap | Keep + polish |
+| Daily history charts | Missing | Full history model + UI |
+| Daily reset | Uses `lastUpdated` only; no snapshots | Snapshot + `lastResetDate` |
+| clearAll | Doesn’t clear history | True full wipe + separate clear history |
+| Nav | Sidebar-only | Responsive: bottom tabs mobile / sidebar wide |
+| Clipboard | Deprecated RN API | `expo-clipboard` |
+| Animations | Limited | Progress motion |
+| App config | `scheme: "tempapp"` | Real scheme e.g. `communitydash` |
+| Version honesty | About says 1.0.0 | Align with baseline ship |
+| Backup | None | JSON export/import of full state |
+
+---
+
+## 10. v1 baseline definition of done
+
+v1 is **done** when a new user can:
+
+1. Create, edit, reorder (or at least stable sort), and delete goals with step sizes and colors/visuals.  
+2. Log progress with large +/−, **including past target**, with clear visuals.  
+3. See master tally update live.  
+4. Survive midnight / relaunch with correct reset **and** retained history for charts.  
+5. View **history charts** (aggregate + per-day detail at minimum).  
+6. Reuse single past goals **and** save/apply **named templates**.  
+7. Export/import template share codes reliably on web.  
+8. Switch theme; wipe data for real; open Ko-fi.  
+9. Use comfortable **mobile** and **desktop web** layouts.  
+10. Read README + this DESIGNDOC and run/deploy static web without reverse-engineering.
+
+**Out of scope for v1 (explicit):**
+- Accounts, multi-device sync, push notifications  
+- App Store / Play submission polish (can follow immediately after)  
+- Widgets, watch apps  
+- Server-side anything  
+- Changing Ko-fi or adding paid tiers  
+- Social feeds, comments, leaderboards  
+
+---
+
+## 11. Implementation milestones (replace old phases)
+
+### M0 — Foundations
+- Schema version + migrate existing persisted state safely  
+- Data models: stepSize, sortOrder, snapshots, templates, lastResetDate  
+- Fix clearAll / clearHistory / full backup export  
+- Real app scheme + version strategy  
+
+### M1 — Core goal UX
+- Edit goal  
+- Step size on create/edit and +/-  
+- Allow overflow + visual overflow treatment  
+- Progress animations  
+- Master tally polish  
+
+### M2 — Reset & history charts
+- Robust daily reset  
+- Daily snapshot writes  
+- History screen (charts + day drill-down)  
+
+### M3 — Hub: history + templates + share
+- Dedupe/cap goal history  
+- Named templates CRUD + apply  
+- Export selected template; harden import validation  
+- `expo-clipboard` + share UX  
+
+### M4 — Responsive shell & web ship
+- Bottom tabs (narrow) / sidebar (wide)  
+- Web static export verified  
+- Deploy docs + GitHub Pages workflow (export → Pages)  
+- README rewrite  
+
+### M5 — Baseline polish
+- A11y pass, empty/error states  
+- About honesty + version bump to 1.0.0 **when** DoD met  
+- Kill dead Expo starter cruft (hello-wave, unused modal if unused)  
+- Manual test checklist (web + one mobile browser width)
+
+---
+
+## 12. Risks & open concerns
+
+| Risk | Mitigation |
+|------|------------|
+| localStorage quota with years of history | Compact snapshot shape; monitor size; optional “export & prune” later |
+| Timezone / travel across midnight | Always use **device local** calendar date; document behavior |
+| Share codes get huge with many goals | lz-string; warn if code > N chars; multi-template not one mega-export |
+| Visual overflow clutter | Design one consistent overflow language across all 8 visuals |
+| Scope creep into “habit app with social” | Hold v1 DoD; park ideas in §13 |
+| GitHub Pages base-path / asset bugs | Document `trailingSlash` + project-site base path; test on real Pages URL only (no multi-host matrix) |
+
+---
+
+## 13. Post-v1 backlog (not committed)
+
+- Deep links: `communitydash://import?code=...` or HTTPS query import  
+- QR share  
+- PWA install + offline shell caching  
+- Home screen widgets  
+- Weekly / manual reset intervals  
+- Drag-and-drop reorder polish  
+- Optional user-provided remote backup (their S3/WebDAV)—still no our-backend  
+- i18n  
+- Native store releases  
+
+---
+
+## 14. Success metrics (qualitative for a free OSS tool)
+
+- “I open it every morning and log without friction.”  
+- “I can see last month and feel progress, not amnesia.”  
+- “I sent a friend my gym template as a string and it just worked.”  
+- “I hosted it on my NAS and my phone uses it on Wi‑Fi.”  
+- Zero pressure to pay; Ko-fi is gratitude, not a gate.
+
+---
+
+## 15. Appendix — terminology
+
+| Casual term | Actual meaning |
+|-------------|----------------|
+| Hash / share hash | lz-string compressed Base64 **share code** of template JSON |
+| Dashboard | One trackable goal card |
+| Template | Named multi-goal blueprint (no live values) |
+| History (goals) | Reusable single-goal blueprints |
+| History (charts) | Time-series daily snapshots for visualization |
+
+---
+
+*This document supersedes the original short DESIGNDOC. Implementation should track milestones M0–M5 until §10 Definition of Done is met; only then is “v1.0.0” honest.*

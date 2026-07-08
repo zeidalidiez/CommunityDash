@@ -1,7 +1,16 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, ScrollView, Alert } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  SafeAreaView,
+  ScrollView,
+  Alert,
+} from 'react-native';
 import { useDashboardStore, VisualType } from '../../store/dashboardStore';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAppTheme } from '../../hooks/useAppTheme';
 
 const COLORS = ['#3498db', '#e74c3c', '#2ecc71', '#f1c40f', '#9b59b6', '#34495e'];
@@ -18,15 +27,34 @@ const VISUAL_TYPES: { label: string; value: VisualType }[] = [
 
 export default function CreateScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ id?: string }>();
+  const editId = typeof params.id === 'string' ? params.id : undefined;
   const { colors } = useAppTheme();
-  const addDashboard = useDashboardStore((state) => state.addDashboard);
-  const addToHistory = useDashboardStore((state) => state.addToHistory);
+  const dashboards = useDashboardStore((s) => s.dashboards);
+  const addDashboard = useDashboardStore((s) => s.addDashboard);
+  const updateDashboard = useDashboardStore((s) => s.updateDashboard);
+  const addToHistory = useDashboardStore((s) => s.addToHistory);
+
+  const existing = editId ? dashboards.find((d) => d.id === editId) : undefined;
+  const isEdit = Boolean(existing);
 
   const [title, setTitle] = useState('');
   const [targetValue, setTargetValue] = useState('10');
+  const [stepSize, setStepSize] = useState('1');
   const [unit, setUnit] = useState('');
   const [visualType, setVisualType] = useState<VisualType>('liquidWave');
   const [colorTheme, setColorTheme] = useState(COLORS[0]);
+
+  useEffect(() => {
+    if (existing) {
+      setTitle(existing.title);
+      setTargetValue(String(existing.targetValue));
+      setStepSize(String(existing.stepSize ?? 1));
+      setUnit(existing.unit);
+      setVisualType(existing.visualType);
+      setColorTheme(existing.colorTheme);
+    }
+  }, [existing?.id]);
 
   const handleSave = () => {
     if (!title.trim()) {
@@ -38,10 +66,29 @@ export default function CreateScreen() {
       Alert.alert('Error', 'Target must be a positive number');
       return;
     }
+    const step = parseFloat(stepSize);
+    if (isNaN(step) || step <= 0) {
+      Alert.alert('Error', 'Step size must be a positive number');
+      return;
+    }
+
+    if (isEdit && existing) {
+      updateDashboard(existing.id, {
+        title: title.trim(),
+        targetValue: target,
+        stepSize: step,
+        unit: unit.trim(),
+        visualType,
+        colorTheme,
+      });
+      router.replace('/');
+      return;
+    }
 
     addDashboard({
       title: title.trim(),
       targetValue: target,
+      stepSize: step,
       unit: unit.trim(),
       visualType,
       colorTheme,
@@ -51,6 +98,7 @@ export default function CreateScreen() {
     addToHistory({
       title: title.trim(),
       targetValue: target,
+      stepSize: step,
       unit: unit.trim(),
       visualType,
       colorTheme,
@@ -58,10 +106,10 @@ export default function CreateScreen() {
 
     setTitle('');
     setTargetValue('10');
+    setStepSize('1');
     setUnit('');
     setVisualType('liquidWave');
     setColorTheme(COLORS[0]);
-
     router.replace('/');
   };
 
@@ -70,7 +118,10 @@ export default function CreateScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Text style={[styles.label, { color: colors.textSecondary }]}>Title</Text>
         <TextInput
-          style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+          style={[
+            styles.input,
+            { backgroundColor: colors.card, borderColor: colors.border, color: colors.text },
+          ]}
           placeholder="e.g., Water Intake"
           placeholderTextColor={colors.textSecondary}
           value={title}
@@ -79,7 +130,10 @@ export default function CreateScreen() {
 
         <Text style={[styles.label, { color: colors.textSecondary }]}>Daily Target</Text>
         <TextInput
-          style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+          style={[
+            styles.input,
+            { backgroundColor: colors.card, borderColor: colors.border, color: colors.text },
+          ]}
           placeholder="e.g., 8"
           placeholderTextColor={colors.textSecondary}
           keyboardType="numeric"
@@ -87,9 +141,25 @@ export default function CreateScreen() {
           onChangeText={setTargetValue}
         />
 
+        <Text style={[styles.label, { color: colors.textSecondary }]}>Step Size (+/−)</Text>
+        <TextInput
+          style={[
+            styles.input,
+            { backgroundColor: colors.card, borderColor: colors.border, color: colors.text },
+          ]}
+          placeholder="e.g., 1 or 250"
+          placeholderTextColor={colors.textSecondary}
+          keyboardType="numeric"
+          value={stepSize}
+          onChangeText={setStepSize}
+        />
+
         <Text style={[styles.label, { color: colors.textSecondary }]}>Unit (Optional)</Text>
         <TextInput
-          style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+          style={[
+            styles.input,
+            { backgroundColor: colors.card, borderColor: colors.border, color: colors.text },
+          ]}
           placeholder="e.g., glasses"
           placeholderTextColor={colors.textSecondary}
           value={unit}
@@ -104,15 +174,20 @@ export default function CreateScreen() {
               style={[
                 styles.typeButton,
                 { backgroundColor: colors.card, borderColor: colors.border },
-                visualType === type.value && { backgroundColor: colors.primary, borderColor: colors.primary },
+                visualType === type.value && {
+                  backgroundColor: colors.primary,
+                  borderColor: colors.primary,
+                },
               ]}
               onPress={() => setVisualType(type.value)}
             >
-              <Text style={[
-                styles.typeButtonText, 
-                { color: colors.text },
-                visualType === type.value && styles.typeButtonTextActive
-              ]}>
+              <Text
+                style={[
+                  styles.typeButtonText,
+                  { color: colors.text },
+                  visualType === type.value && styles.typeButtonTextActive,
+                ]}
+              >
                 {type.label}
               </Text>
             </TouchableOpacity>
@@ -134,8 +209,13 @@ export default function CreateScreen() {
           ))}
         </View>
 
-        <TouchableOpacity style={[styles.saveButton, { backgroundColor: colors.success }]} onPress={handleSave}>
-          <Text style={styles.saveButtonText}>Create Dashboard</Text>
+        <TouchableOpacity
+          style={[styles.saveButton, { backgroundColor: colors.success }]}
+          onPress={handleSave}
+        >
+          <Text style={styles.saveButtonText}>
+            {isEdit ? 'Save Changes' : 'Create Dashboard'}
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -143,9 +223,7 @@ export default function CreateScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   scrollContent: {
     padding: 16,
     paddingBottom: 32,
@@ -177,12 +255,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
   },
-  typeButtonText: {
-    fontWeight: '600',
-  },
-  typeButtonTextActive: {
-    color: '#fff',
-  },
+  typeButtonText: { fontWeight: '600' },
+  typeButtonTextActive: { color: '#fff' },
   colorRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -196,9 +270,7 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: 'transparent',
   },
-  colorCircleActive: {
-    // border color applied inline
-  },
+  colorCircleActive: {},
   saveButton: {
     padding: 18,
     borderRadius: 12,

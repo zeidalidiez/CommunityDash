@@ -1,50 +1,87 @@
-# Welcome to your Expo app 👋
+# CommunityDash
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Local-first, free forever daily goal dashboards with visual progress, history charts, and shareable templates. No account. No backend.
 
-## Get started
+**Public web host:** [GitHub Pages](https://pages.github.com/) only (no Vercel / Cloudflare / Netlify plan).
 
-1. Install dependencies
+## Features (v1 baseline)
 
-   ```bash
-   npm install
-   ```
+- Create, edit, and track goals with configurable step size
+- Values may exceed target (overflow shown in UI)
+- Master tally of goals met today
+- Daily reset with retained **history charts**
+- Single-goal history reuse + **named multi-goal templates**
+- Share templates via compressed share codes
+- Full JSON backup export/import
+- Dark / light / system theme
+- Responsive: bottom tabs on phone, sidebar on wide layouts
 
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Run locally
 
 ```bash
-npm run reset-project
+npm install
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+- Press `w` for web, or use Android / iOS simulators / Expo Go.
+- Lint: `npm run lint`
+- Unit tests: `npm test`
+- Typecheck: `npx tsc --noEmit`
 
-## Learn more
+## Web export (static)
 
-To learn more about developing your project with Expo, look at the following resources:
+```bash
+npm run export:web
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Output is written to `dist/`. This is the same artifact GitHub Pages deploys.
 
-## Join the community
+## GitHub Pages deploy
 
-Join our community of developers creating universal apps.
+This repo ships a workflow at `.github/workflows/deploy-pages.yml` that:
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+1. Installs dependencies
+2. Runs `npx expo export --platform web`
+3. Uploads `dist/` to GitHub Pages
+
+### One-time repo setup
+
+1. Repo **Settings → Pages → Build and deployment → Source: GitHub Actions**
+2. Push to `main` (or run the workflow manually under Actions)
+3. Site URL is typically:
+   - User/org site: `https://<user>.github.io/`
+   - Project site: `https://<user>.github.io/CommunityDash/`
+
+If the app is a **project site** (served under `/CommunityDash/`), set the Expo public base path before export:
+
+```bash
+# Windows PowerShell
+$env:EXPO_BASE_PATH="/CommunityDash"
+npm run export:web
+```
+
+Or configure `experiments.baseUrl` / router base in Expo for your fork. Document any path you use in your fork’s README.
+
+User data always stays in the browser (`localStorage` via AsyncStorage). Pages only serves static assets.
+
+## Data & privacy
+
+- Everything is stored on-device / in-browser
+- Settings → Export full backup (JSON) for your own safekeeping
+- Settings → Erase All App Data wipes dashboards, history, templates, and snapshots
+- Donation: [Ko-fi](https://ko-fi.com/zeiddiez) (optional; app stays free)
+
+## Project layout
+
+| Path | Role |
+|------|------|
+| `app/` | Expo Router screens |
+| `store/dashboardStore.ts` | Zustand + persist |
+| `utils/dashboardLogic.ts` | Pure domain logic (tested) |
+| `utils/templateUtils.ts` | Share code encode/decode |
+| `components/` | Cards + SVG visualizations |
+| `DESIGNDOC` | Product & design source of truth |
+
+## License / contributing
+
+Open source — see the repository on GitHub. PRs welcome for bugs and scoped v1 polish; see `DESIGNDOC` §13 for explicit post-v1 backlog.

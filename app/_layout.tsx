@@ -2,14 +2,13 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { AppState, Platform, StyleSheet, View } from 'react-native';
+import { AppState, StyleSheet, View } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import 'react-native-reanimated';
 
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { useDashboardStore } from '../store/dashboardStore';
 
-// Prevent the splash screen from auto-hiding until state is hydrated
 SplashScreen.preventAutoHideAsync();
 
 export const unstable_settings = {
@@ -24,7 +23,6 @@ export default function RootLayout() {
   useEffect(() => {
     if (hasHydrated) {
       checkDailyReset();
-      // Hide the splash screen once we know the user's data and theme are loaded
       SplashScreen.hideAsync();
     }
 
@@ -40,7 +38,7 @@ export default function RootLayout() {
   }, [hasHydrated, checkDailyReset]);
 
   if (!hasHydrated) {
-    return null; // Keep rendering nothing until the splash screen hides
+    return null;
   }
 
   return (
@@ -48,7 +46,6 @@ export default function RootLayout() {
       <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
         </Stack>
         <StatusBar style={isDark ? 'light' : 'dark'} />
       </ThemeProvider>

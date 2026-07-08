@@ -11,18 +11,23 @@ export default function AboutScreen() {
         <View style={[styles.card, { backgroundColor: colors.card }]}>
           <View style={styles.header}>
             <View style={[styles.logoContainer, { backgroundColor: `${colors.primary}20` }]}>
-              <Image 
-                source={require('../../assets/images/communitydashlogo.png')} 
+              <Image
+                source={require('../../assets/images/communitydashlogo.png')}
                 style={{ width: 60, height: 60 }}
                 resizeMode="contain"
               />
             </View>
             <Text style={[styles.title, { color: colors.text }]}>CommunityDash</Text>
-            <Text style={[styles.version, { color: colors.textSecondary }]}>Version 1.0.0</Text>
+            <Text style={[styles.version, { color: colors.textSecondary }]}>
+              Version 1.0.0 (baseline)
+            </Text>
           </View>
 
           <Text style={[styles.bodyText, { color: colors.text }]}>
-            I created this tool after struggling to find a simple, free dashboard that was not so feature rich as to be distracting or overwhelming to me in my use case, which was simple dashboards to track things like water consumption and exercise. I was hoping others could benefit from the same.  </Text>
+            I created this tool after struggling to find a simple, free dashboard that was not so
+            feature rich as to be distracting or overwhelming — for things like water and exercise.
+            Local-first, free forever, no account required.
+          </Text>
 
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
@@ -31,8 +36,8 @@ export default function AboutScreen() {
           </Text>
           <Text style={[styles.footerText, { color: colors.textSecondary }]}>
             100% Free &{' '}
-            <Text 
-              style={{ color: colors.primary, textDecorationLine: 'underline' }} 
+            <Text
+              style={{ color: colors.primary, textDecorationLine: 'underline' }}
               onPress={() => Linking.openURL('https://github.com/zeidalidiez/CommunityDash')}
             >
               Open Source
@@ -41,17 +46,19 @@ export default function AboutScreen() {
 
           <View style={[styles.qaSection, { borderColor: colors.border }]}>
             <Text style={[styles.qaText, { color: colors.textSecondary }]}>
-              Looking for the world's best QA team? Check out{' '}
-              <Text 
-                style={{ color: colors.primary, fontWeight: 'bold' }} 
+              Looking for the world&apos;s best QA team? Check out{' '}
+              <Text
+                style={{ color: colors.primary, fontWeight: 'bold' }}
                 onPress={() => Linking.openURL('https://topnotchqa.com')}
               >
                 Top Notch
               </Text>
             </Text>
             <View style={styles.qaLogoContainer}>
-              <Image 
-                source={{ uri: 'https://topnotchqa.com/wp-content/uploads/2018/05/tn-logo-small-white.png' }} 
+              <Image
+                source={{
+                  uri: 'https://topnotchqa.com/wp-content/uploads/2018/05/tn-logo-small-white.png',
+                }}
                 style={styles.qaLogo}
                 resizeMode="contain"
               />
@@ -64,9 +71,7 @@ export default function AboutScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   scrollContent: {
     padding: 16,
     paddingBottom: 32,
@@ -83,39 +88,22 @@ const styles = StyleSheet.create({
     elevation: 3,
     alignItems: 'center',
   },
-  header: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
+  header: { alignItems: 'center', marginBottom: 32 },
   logoContainer: {
     padding: 16,
     borderRadius: 24,
     marginBottom: 16,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  version: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
+  title: { fontSize: 28, fontWeight: 'bold', marginBottom: 4 },
+  version: { fontSize: 14, fontWeight: '600' },
   bodyText: {
     fontSize: 16,
     lineHeight: 24,
     textAlign: 'center',
     marginBottom: 32,
   },
-  divider: {
-    width: '100%',
-    height: 1,
-    marginBottom: 24,
-  },
-  footerText: {
-    fontSize: 14,
-    marginBottom: 8,
-  },
+  divider: { width: '100%', height: 1, marginBottom: 24 },
+  footerText: { fontSize: 14, marginBottom: 8 },
   qaSection: {
     marginTop: 32,
     paddingTop: 24,
@@ -123,18 +111,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
   },
-  qaText: {
-    fontSize: 14,
-    textAlign: 'center',
-    marginBottom: 16,
-  },
+  qaText: { fontSize: 14, textAlign: 'center', marginBottom: 16 },
   qaLogoContainer: {
     backgroundColor: '#1a1a1a',
     padding: 12,
     borderRadius: 12,
   },
-  qaLogo: {
-    width: 120,
-    height: 40,
-  }
+  qaLogo: { width: 120, height: 40 },
 });

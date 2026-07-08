@@ -1,6 +1,15 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, SafeAreaView, useWindowDimensions, Image } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  SafeAreaView,
+  useWindowDimensions,
+  Image,
+} from 'react-native';
 import { useDashboardStore } from '../../store/dashboardStore';
+import { calculateMasterTally } from '../../utils/dashboardLogic';
 import DashboardCard from '../../components/DashboardCard';
 import { Link } from 'expo-router';
 import { useAppTheme } from '../../hooks/useAppTheme';
@@ -13,7 +22,11 @@ export default function DailyScreen() {
   const decrementValue = useDashboardStore((state) => state.decrementValue);
   const removeDashboard = useDashboardStore((state) => state.removeDashboard);
 
-  // Determine number of columns based on width
+  const sorted = useMemo(
+    () => [...dashboards].sort((a, b) => a.sortOrder - b.sortOrder),
+    [dashboards]
+  );
+
   const numColumns = useMemo(() => {
     if (width >= 1500) return 5;
     if (width >= 1200) return 4;
@@ -22,19 +35,19 @@ export default function DailyScreen() {
     return 1;
   }, [width]);
 
-  const completed = dashboards.filter((d) => d.currentValue >= d.targetValue).length;
-  const total = dashboards.length;
-  const percentage = total > 0 ? (completed / total) * 100 : 0;
+  const { completed, total, percentage } = calculateMasterTally(sorted);
 
-  if (dashboards.length === 0) {
+  if (sorted.length === 0) {
     return (
       <SafeAreaView style={[styles.emptyContainer, { backgroundColor: colors.background }]}>
-        <Image 
-          source={require('../../assets/images/communitydashlogo.png')} 
+        <Image
+          source={require('../../assets/images/communitydashlogo.png')}
           style={{ width: 100, height: 100, marginBottom: 24, opacity: 0.8 }}
           resizeMode="contain"
         />
-        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>You have no dashboards yet.</Text>
+        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+          You have no dashboards yet.
+        </Text>
         <Link href="/create" style={[styles.emptyLink, { backgroundColor: colors.primary }]}>
           <Text style={styles.emptyLinkText}>Create your first dashboard</Text>
         </Link>
@@ -45,12 +58,12 @@ export default function DailyScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <FlatList
-        key={`grid-${numColumns}`} // Force re-render when columns change
+        key={`grid-${numColumns}`}
         numColumns={numColumns}
-        data={dashboards}
+        data={sorted}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <View style={[styles.cardWrapper, { width: `${100 / numColumns}%` }]}>
+          <View style={[styles.cardWrapper, { width: `${100 / numColumns}%` as any }]}>
             <DashboardCard
               item={item}
               onIncrement={() => incrementValue(item.id)}
@@ -64,8 +77,8 @@ export default function DailyScreen() {
         ListHeaderComponent={
           <View style={styles.heroSection}>
             <View style={[styles.heroIcon, { backgroundColor: `${colors.primary}20` }]}>
-              <Image 
-                source={require('../../assets/images/communitydashlogo.png')} 
+              <Image
+                source={require('../../assets/images/communitydashlogo.png')}
                 style={{ width: 40, height: 40 }}
                 resizeMode="contain"
               />
@@ -78,13 +91,28 @@ export default function DailyScreen() {
         }
       />
 
-      <View style={[styles.tallyWrapper]}>
-        <View style={[styles.tallyContainer, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
+      <View style={styles.tallyWrapper}>
+        <View
+          style={[
+            styles.tallyContainer,
+            { backgroundColor: colors.card, borderTopColor: colors.border },
+          ]}
+        >
           <Text style={[styles.tallyText, { color: colors.text }]}>
             {completed} / {total} Goals Met
           </Text>
-          <View style={[styles.progressBarBackground, { backgroundColor: isDark ? '#333' : '#e6e6e6' }]}>
-            <View style={[styles.progressBarFill, { width: `${percentage}%`, backgroundColor: colors.success }]} />
+          <View
+            style={[
+              styles.progressBarBackground,
+              { backgroundColor: isDark ? '#333' : '#e6e6e6' },
+            ]}
+          >
+            <View
+              style={[
+                styles.progressBarFill,
+                { width: `${percentage}%` as any, backgroundColor: colors.success },
+              ]}
+            />
           </View>
         </View>
       </View>
@@ -93,9 +121,7 @@ export default function DailyScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   heroSection: {
     width: '100%',
     paddingHorizontal: 16,
@@ -111,24 +137,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 16,
   },
-  heroTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  heroSubtitle: {
-    fontSize: 16,
-  },
-  listContent: {
-    paddingBottom: 140, // padding for the floating tally
-  },
-  columnWrapper: {
-    justifyContent: 'flex-start',
-    paddingHorizontal: 8,
-  },
-  cardWrapper: {
-    padding: 0, // DashboardCard has its own margins
-  },
+  heroTitle: { fontSize: 24, fontWeight: 'bold', marginBottom: 8 },
+  heroSubtitle: { fontSize: 16 },
+  listContent: { paddingBottom: 140 },
+  columnWrapper: { justifyContent: 'flex-start', paddingHorizontal: 8 },
+  cardWrapper: { padding: 0 },
   tallyWrapper: {
     position: 'absolute',
     bottom: 24,
@@ -139,7 +152,7 @@ const styles = StyleSheet.create({
   },
   tallyContainer: {
     width: '100%',
-    maxWidth: 600, // Constrain tally width on desktop
+    maxWidth: 600,
     padding: 16,
     borderRadius: 16,
     borderWidth: 1,
@@ -159,18 +172,13 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     overflow: 'hidden',
   },
-  progressBarFill: {
-    height: '100%',
-  },
+  progressBarFill: { height: '100%' },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  emptyText: {
-    fontSize: 18,
-    marginBottom: 24,
-  },
+  emptyText: { fontSize: 18, marginBottom: 24 },
   emptyLink: {
     paddingHorizontal: 24,
     paddingVertical: 14,

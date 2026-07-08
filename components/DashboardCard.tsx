@@ -1,9 +1,36 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Pressable, LayoutAnimation, Platform, UIManager, Alert, ScrollView, Modal } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Pressable,
+  LayoutAnimation,
+  Platform,
+  UIManager,
+  Alert,
+  ScrollView,
+  Modal,
+} from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+} from 'react-native-reanimated';
 import { DashboardItem, useDashboardStore, VisualType } from '../store/dashboardStore';
-import { LiquidWave, NeonGlowRing, BatteryCore, GradientBar, PizzaSlices, SunHorizon, Hourglass, RadarScope } from './Visualizations';
-import { Minus, Plus, Trash2, Palette } from 'lucide-react-native';
+import {
+  LiquidWave,
+  NeonGlowRing,
+  BatteryCore,
+  GradientBar,
+  PizzaSlices,
+  SunHorizon,
+  Hourglass,
+  RadarScope,
+} from './Visualizations';
+import { Minus, Plus, Trash2, Palette, Pencil } from 'lucide-react-native';
 import { useAppTheme } from '../hooks/useAppTheme';
+import { useRouter } from 'expo-router';
 
 if (Platform.OS === 'android') {
   if (UIManager.setLayoutAnimationEnabledExperimental) {
@@ -29,14 +56,43 @@ const VISUAL_TYPES: { label: string; value: VisualType }[] = [
   { label: 'Radar Scope', value: 'radarScope' },
 ];
 
-export default function DashboardCard({ item, onIncrement, onDecrement, onDelete }: DashboardCardProps) {
+export default function DashboardCard({
+  item,
+  onIncrement,
+  onDecrement,
+  onDelete,
+}: DashboardCardProps) {
   const { colors, isDark } = useAppTheme();
   const updateDashboard = useDashboardStore((state) => state.updateDashboard);
-  
-  const progress = item.targetValue > 0 ? item.currentValue / item.targetValue : 0;
+  const router = useRouter();
+
+  const progress =
+    item.targetValue > 0 ? item.currentValue / item.targetValue : 0;
   const isCompleted = item.currentValue >= item.targetValue;
+  const isOverflow = item.currentValue > item.targetValue;
+  const overflowPct =
+    item.targetValue > 0
+      ? Math.round(((item.currentValue - item.targetValue) / item.targetValue) * 100)
+      : 0;
+
   const [isExpanded, setIsExpanded] = useState(false);
   const [isModalVisible, setModalVisible] = useState(false);
+
+  const animProgress = useSharedValue(Math.min(progress, 1));
+  useEffect(() => {
+    animProgress.value = withTiming(Math.min(Math.max(progress, 0), 1.5), {
+      duration: 280,
+    });
+  }, [progress, animProgress]);
+
+  const pulseStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        scale: withTiming(isCompleted ? 1.02 : 1, { duration: 200 }),
+      },
+    ],
+    opacity: withTiming(1, { duration: 200 }),
+  }));
 
   const toggleExpand = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -44,93 +100,127 @@ export default function DashboardCard({ item, onIncrement, onDecrement, onDelete
   };
 
   const handleDelete = (e: any) => {
-    e?.stopPropagation();
-
+    e?.stopPropagation?.();
     if (Platform.OS === 'web') {
-      const confirmed = window.confirm(`Are you sure you want to stop tracking "${item.title}"?`);
-      if (confirmed) {
-        onDelete();
-      }
-    } else {
-      Alert.alert(
-        'Delete Goal',
-        `Are you sure you want to stop tracking "${item.title}"?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Delete', style: 'destructive', onPress: onDelete },
-        ]
+      const confirmed = window.confirm(
+        `Are you sure you want to stop tracking "${item.title}"?`
       );
+      if (confirmed) onDelete();
+    } else {
+      Alert.alert('Delete Goal', `Are you sure you want to stop tracking "${item.title}"?`, [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: onDelete },
+      ]);
     }
   };
 
   const handleIncrement = (e: any) => {
-    e?.stopPropagation();
+    e?.stopPropagation?.();
     onIncrement();
   };
 
   const handleDecrement = (e: any) => {
-    e?.stopPropagation();
+    e?.stopPropagation?.();
     onDecrement();
   };
 
+  const handleEdit = (e: any) => {
+    e?.stopPropagation?.();
+    router.push({ pathname: '/create', params: { id: item.id } });
+  };
+
   const renderVisual = () => {
-    const actualColor = isCompleted ? colors.success : item.colorTheme;
+    const actualColor = isOverflow
+      ? '#f39c12'
+      : isCompleted
+        ? colors.success
+        : item.colorTheme;
     const tColor = isDark ? '#333' : '#e6e6e6';
-    
-    switch(item.visualType) {
+    const visProps = {
+      progress,
+      color: actualColor,
+      trackColor: tColor,
+      targetValue: item.targetValue,
+      overflow: isOverflow,
+    };
+
+    switch (item.visualType) {
       case 'neonGlow':
-        return <NeonGlowRing progress={progress} color={actualColor} trackColor={tColor} targetValue={item.targetValue} />;
+        return <NeonGlowRing {...visProps} />;
       case 'batteryCore':
-        return <BatteryCore progress={progress} color={actualColor} trackColor={tColor} targetValue={item.targetValue} />;
+        return <BatteryCore {...visProps} />;
       case 'gradientBar':
-        return <GradientBar progress={progress} color={actualColor} trackColor={tColor} targetValue={item.targetValue} />;
+        return <GradientBar {...visProps} />;
       case 'pizzaSlices':
-        return <PizzaSlices progress={progress} color={actualColor} trackColor={tColor} targetValue={item.targetValue} />;
+        return <PizzaSlices {...visProps} />;
       case 'sunHorizon':
-        return <SunHorizon progress={progress} color={actualColor} trackColor={tColor} targetValue={item.targetValue} />;
+        return <SunHorizon {...visProps} />;
       case 'hourglass':
-        return <Hourglass progress={progress} color={actualColor} trackColor={tColor} targetValue={item.targetValue} />;
+        return <Hourglass {...visProps} />;
       case 'radarScope':
-        return <RadarScope progress={progress} color={actualColor} trackColor={tColor} targetValue={item.targetValue} />;
+        return <RadarScope {...visProps} />;
       case 'liquidWave':
       default:
-        return <LiquidWave progress={progress} color={actualColor} trackColor={tColor} targetValue={item.targetValue} />;
+        return <LiquidWave {...visProps} />;
     }
   };
 
   return (
     <>
-      <Pressable 
+      <Pressable
         onPress={toggleExpand}
         style={[
-          styles.card, 
+          styles.card,
           { backgroundColor: colors.card },
-          isCompleted && { backgroundColor: isDark ? '#1a3320' : '#f9fff9', borderColor: colors.success, borderWidth: 1 }
+          isCompleted && {
+            backgroundColor: isDark ? '#1a3320' : '#f9fff9',
+            borderColor: isOverflow ? '#f39c12' : colors.success,
+            borderWidth: 1,
+          },
         ]}
       >
         <View style={styles.cardHeader}>
-          <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>{item.title}</Text>
-          <Text style={[styles.valueText, { color: colors.textSecondary }]}>
-            {item.currentValue} / {item.targetValue} {item.unit}
+          <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
+            {item.title}
           </Text>
+          <View style={styles.valueCol}>
+            <Text
+              style={[
+                styles.valueText,
+                { color: isOverflow ? '#f39c12' : colors.textSecondary },
+              ]}
+            >
+              {item.currentValue} / {item.targetValue} {item.unit}
+            </Text>
+            {isOverflow && (
+              <View style={[styles.overflowChip, { backgroundColor: '#f39c1222' }]}>
+                <Text style={styles.overflowChipText}>+{overflowPct}% over</Text>
+              </View>
+            )}
+          </View>
         </View>
 
-        <View style={styles.visualContainer}>
+        <Animated.View style={[styles.visualContainer, pulseStyle]}>
           {renderVisual()}
-        </View>
+        </Animated.View>
 
         <View style={styles.controlsContainer}>
-          <TouchableOpacity 
-            style={[styles.button, { backgroundColor: isDark ? '#444' : '#e0e0e0' }]} 
-            onPress={handleDecrement} 
+          <TouchableOpacity
+            style={[styles.button, { backgroundColor: isDark ? '#444' : '#e0e0e0' }]}
+            onPress={handleDecrement}
             activeOpacity={0.7}
+            accessibilityLabel={`Decrease ${item.title} by ${item.stepSize}`}
           >
             <Minus color={isDark ? '#fff' : '#333'} size={24} />
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.button, { backgroundColor: item.colorTheme }]} 
-            onPress={handleIncrement} 
+          <Text style={[styles.stepHint, { color: colors.textSecondary }]}>
+            ±{item.stepSize}
+          </Text>
+          <TouchableOpacity
+            style={[styles.button, { backgroundColor: item.colorTheme }]}
+            onPress={handleIncrement}
             activeOpacity={0.7}
+            accessibilityLabel={`Increase ${item.title} by ${item.stepSize}`}
           >
             <Plus color="#fff" size={24} />
           </TouchableOpacity>
@@ -138,23 +228,38 @@ export default function DashboardCard({ item, onIncrement, onDecrement, onDelete
 
         {isExpanded && (
           <View style={[styles.expandedArea, { borderTopColor: colors.border }]}>
-            
-            <TouchableOpacity 
-              style={[styles.visualSelectorBtn, { backgroundColor: isDark ? '#333' : '#f0f0f0' }]} 
-              onPress={(e) => { e?.stopPropagation(); setModalVisible(true); }}
+            <TouchableOpacity
+              style={[styles.actionBtn, { backgroundColor: isDark ? '#333' : '#f0f0f0' }]}
+              onPress={handleEdit}
+              activeOpacity={0.7}
+            >
+              <Pencil color={colors.textSecondary} size={18} />
+              <Text style={[styles.actionBtnText, { color: colors.textSecondary }]}>
+                Edit
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionBtn, { backgroundColor: isDark ? '#333' : '#f0f0f0' }]}
+              onPress={(e) => {
+                e?.stopPropagation?.();
+                setModalVisible(true);
+              }}
               activeOpacity={0.7}
             >
               <Palette color={colors.textSecondary} size={18} />
-              <Text style={[styles.visualSelectorBtnText, { color: colors.textSecondary }]}>Visual</Text>
+              <Text style={[styles.actionBtnText, { color: colors.textSecondary }]}>
+                Visual
+              </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={[styles.deleteButton, { backgroundColor: colors.danger + '15' }]} 
+            <TouchableOpacity
+              style={[styles.actionBtn, { backgroundColor: colors.danger + '15' }]}
               onPress={handleDelete}
               activeOpacity={0.7}
             >
               <Trash2 color={colors.danger} size={20} />
-              <Text style={[styles.deleteText, { color: colors.danger }]}>Delete</Text>
+              <Text style={[styles.actionBtnText, { color: colors.danger }]}>Delete</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -166,14 +271,20 @@ export default function DashboardCard({ item, onIncrement, onDecrement, onDelete
         animationType="fade"
         onRequestClose={() => setModalVisible(false)}
       >
-        <TouchableOpacity 
-          style={styles.modalOverlay} 
-          activeOpacity={1} 
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
           onPress={() => setModalVisible(false)}
         >
-          <View style={[styles.modalContent, { backgroundColor: colors.card, shadowColor: colors.text }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Select Visual Style</Text>
-            
+          <View
+            style={[
+              styles.modalContent,
+              { backgroundColor: colors.card, shadowColor: colors.text },
+            ]}
+          >
+            <Text style={[styles.modalTitle, { color: colors.text }]}>
+              Select Visual Style
+            </Text>
             <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
               {VISUAL_TYPES.map((type) => {
                 const isActive = item.visualType === type.value;
@@ -183,7 +294,7 @@ export default function DashboardCard({ item, onIncrement, onDecrement, onDelete
                     style={[
                       styles.modalOption,
                       { borderBottomColor: colors.border },
-                      isActive && { backgroundColor: colors.primary + '15' }
+                      isActive && { backgroundColor: colors.primary + '15' },
                     ]}
                     onPress={() => {
                       updateDashboard(item.id, { visualType: type.value });
@@ -191,20 +302,26 @@ export default function DashboardCard({ item, onIncrement, onDecrement, onDelete
                     }}
                     activeOpacity={0.7}
                   >
-                    <Text style={[
-                      styles.modalOptionText,
-                      { color: isActive ? colors.primary : colors.text },
-                      isActive && { fontWeight: 'bold' }
-                    ]}>
+                    <Text
+                      style={[
+                        styles.modalOptionText,
+                        { color: isActive ? colors.primary : colors.text },
+                        isActive && { fontWeight: 'bold' },
+                      ]}
+                    >
                       {type.label}
                     </Text>
-                    {isActive && <View style={[styles.activeDot, { backgroundColor: colors.primary }]} />}
+                    {isActive && (
+                      <View style={[styles.activeDot, { backgroundColor: colors.primary }]} />
+                    )}
                   </TouchableOpacity>
                 );
               })}
             </ScrollView>
-            
-            <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setModalVisible(false)}>
+            <TouchableOpacity
+              style={styles.modalCloseBtn}
+              onPress={() => setModalVisible(false)}
+            >
               <Text style={[styles.modalCloseText, { color: colors.primary }]}>Close</Text>
             </TouchableOpacity>
           </View>
@@ -229,7 +346,7 @@ const styles = StyleSheet.create({
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'baseline',
+    alignItems: 'flex-start',
     marginBottom: 20,
   },
   title: {
@@ -238,19 +355,29 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 16,
   },
+  valueCol: {
+    alignItems: 'flex-end',
+  },
   valueText: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  overflowChip: {
+    marginTop: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  overflowChipText: {
+    color: '#e67e22',
+    fontSize: 11,
+    fontWeight: '700',
   },
   visualContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 16,
-    minHeight: 120, // ensure enough space for visualizations
-  },
-  counterText: {
-    fontSize: 36,
-    fontWeight: '900',
+    minHeight: 120,
   },
   controlsContainer: {
     flexDirection: 'row',
@@ -266,39 +393,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  stepHint: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
   expandedArea: {
     marginTop: 24,
     paddingTop: 20,
     borderTopWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 12,
+    gap: 8,
   },
-  visualSelectorBtn: {
+  actionBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 6,
     paddingVertical: 12,
     borderRadius: 12,
   },
-  visualSelectorBtnText: {
+  actionBtnText: {
     fontWeight: 'bold',
-    fontSize: 14,
-  },
-  deleteButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    borderRadius: 12,
-  },
-  deleteText: {
-    fontWeight: 'bold',
-    fontSize: 14,
+    fontSize: 13,
   },
   modalOverlay: {
     flex: 1,
@@ -347,10 +465,10 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
-    backgroundColor: 'rgba(52, 152, 219, 0.1)', // Light primary tint
+    backgroundColor: 'rgba(52, 152, 219, 0.1)',
   },
   modalCloseText: {
     fontSize: 16,
     fontWeight: 'bold',
-  }
+  },
 });
