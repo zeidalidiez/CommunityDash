@@ -43,27 +43,6 @@ export default function AboutScreen() {
               Open Source
             </Text>
           </Text>
-
-          <View style={[styles.qaSection, { borderColor: colors.border }]}>
-            <Text style={[styles.qaText, { color: colors.textSecondary }]}>
-              Looking for the world&apos;s best QA team? Check out{' '}
-              <Text
-                style={{ color: colors.primary, fontWeight: 'bold' }}
-                onPress={() => Linking.openURL('https://topnotchqa.com')}
-              >
-                Top Notch
-              </Text>
-            </Text>
-            <View style={styles.qaLogoContainer}>
-              <Image
-                source={{
-                  uri: 'https://topnotchqa.com/wp-content/uploads/2018/05/tn-logo-small-white.png',
-                }}
-                style={styles.qaLogo}
-                resizeMode="contain"
-              />
-            </View>
-          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -104,18 +83,4 @@ const styles = StyleSheet.create({
   },
   divider: { width: '100%', height: 1, marginBottom: 24 },
   footerText: { fontSize: 14, marginBottom: 8 },
-  qaSection: {
-    marginTop: 32,
-    paddingTop: 24,
-    borderTopWidth: 1,
-    alignItems: 'center',
-    width: '100%',
-  },
-  qaText: { fontSize: 14, textAlign: 'center', marginBottom: 16 },
-  qaLogoContainer: {
-    backgroundColor: '#1a1a1a',
-    padding: 12,
-    borderRadius: 12,
-  },
-  qaLogo: { width: 120, height: 40 },
 });
