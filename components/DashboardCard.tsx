@@ -78,20 +78,15 @@ export default function DashboardCard({
   const [isExpanded, setIsExpanded] = useState(false);
   const [isModalVisible, setModalVisible] = useState(false);
 
-  const animProgress = useSharedValue(Math.min(progress, 1));
+  const pulseScale = useSharedValue(1);
   useEffect(() => {
-    animProgress.value = withTiming(Math.min(Math.max(progress, 0), 1.5), {
-      duration: 280,
+    pulseScale.value = withTiming(1.04, { duration: 120 }, () => {
+      pulseScale.value = withTiming(1, { duration: 180 });
     });
-  }, [progress, animProgress]);
+  }, [item.currentValue, pulseScale]);
 
   const pulseStyle = useAnimatedStyle(() => ({
-    transform: [
-      {
-        scale: withTiming(isCompleted ? 1.02 : 1, { duration: 200 }),
-      },
-    ],
-    opacity: withTiming(1, { duration: 200 }),
+    transform: [{ scale: pulseScale.value }],
   }));
 
   const toggleExpand = () => {
@@ -141,6 +136,7 @@ export default function DashboardCard({
       color: actualColor,
       trackColor: tColor,
       targetValue: item.targetValue,
+      currentValue: item.currentValue,
       overflow: isOverflow,
     };
 
