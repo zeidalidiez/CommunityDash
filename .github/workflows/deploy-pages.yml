@@ -31,10 +31,8 @@ jobs:
         run: npm ci
 
       - name: Export web
+        # baseUrl is set in app.json experiments.baseUrl (/CommunityDash) for project Pages
         run: npx expo export --platform web
-        env:
-          # Project site default; override in repo Variables if needed
-          EXPO_BASE_PATH: ${{ vars.EXPO_BASE_PATH }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

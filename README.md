@@ -52,15 +52,10 @@ This repo ships a workflow at `.github/workflows/deploy-pages.yml` that:
    - User/org site: `https://<user>.github.io/`
    - Project site: `https://<user>.github.io/CommunityDash/`
 
-If the app is a **project site** (served under `/CommunityDash/`), set the Expo public base path before export:
+This is a **project site** at `https://<user>.github.io/CommunityDash/`.  
+`app.json` sets `experiments.baseUrl` to `"/CommunityDash"` so asset and router paths resolve under that prefix. Without it, the JS bundle is requested from `/_expo/...` on the domain root (404 → blank page).
 
-```bash
-# Windows PowerShell
-$env:EXPO_BASE_PATH="/CommunityDash"
-npm run export:web
-```
-
-Or configure `experiments.baseUrl` / router base in Expo for your fork. Document any path you use in your fork’s README.
+If you fork under a different repo name, change `experiments.baseUrl` to match (`"/YourRepoName"`, no trailing slash).
 
 User data always stays in the browser (`localStorage` via AsyncStorage). Pages only serves static assets.
 
