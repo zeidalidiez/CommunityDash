@@ -417,9 +417,26 @@ export function parseBackupPayload(raw: string): BackupPayload | null {
   }
 }
 
-/** Clear chart snapshots only. */
-export function clearHistorySnapshots(snapshots: DailySnapshot[]): DailySnapshot[] {
-  return [];
+/**
+ * Clear chart history only: wipe dailySnapshots while preserving active goals,
+ * goal history blueprints, named templates, and lastResetDate.
+ */
+export function applyClearHistory<T extends {
+  dashboards: DashboardItem[];
+  history: HistoryItem[];
+  templates: NamedTemplate[];
+  dailySnapshots: DailySnapshot[];
+  lastResetDate: string;
+}>(state: T): T {
+  return {
+    ...state,
+    dailySnapshots: [],
+  };
+}
+
+/** Full wipe of user domains (dashboards, history, templates, snapshots). */
+export function applyClearAllDomains() {
+  return emptyDomainState();
 }
 
 export function emptyDomainState() {

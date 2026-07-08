@@ -7,7 +7,8 @@ import {
   calculateMasterTally,
   upsertHistory,
   emptyDomainState,
-  clearHistorySnapshots,
+  applyClearHistory,
+  applyClearAllDomains,
   buildBackupPayload,
   parseBackupPayload,
   migratePersistedState,
@@ -211,8 +212,9 @@ describe('template compress round-trip', () => {
 });
 
 describe('clearAll / clearHistory domains', () => {
-  test('emptyDomainState clears all domains', () => {
-    const empty = emptyDomainState();
+  test('applyClearAllDomains empties every user domain', () => {
+    const empty = applyClearAllDomains();
+    expect(empty).toEqual(emptyDomainState());
     expect(empty.dashboards).toEqual([]);
     expect(empty.history).toEqual([]);
     expect(empty.templates).toEqual([]);
@@ -220,11 +222,63 @@ describe('clearAll / clearHistory domains', () => {
     expect(empty.lastResetDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
-  test('clearHistorySnapshots only clears chart snapshots', () => {
-    const snaps = [
-      buildSnapshotFromDashboards('2026-07-01', [sampleItem({ currentValue: 8 })]),
+  test('applyClearHistory only clears chart snapshots; keeps goals/history/templates', () => {
+    const dashboards = [sampleItem({ id: 'g1', currentValue: 5 })];
+    const history = [
+      {
+        id: 'h1',
+        title: 'Water',
+        targetValue: 8,
+        stepSize: 1,
+        unit: 'glasses',
+        visualType: 'liquidWave' as const,
+        colorTheme: '#3498db',
+        lastUsedAt: '2026-07-01T00:00:00.000Z',
+      },
     ];
-    expect(clearHistorySnapshots(snaps)).toEqual([]);
+    const templates = [
+      {
+        id: 't1',
+        templateName: 'Pack',
+        createdAt: '2026-07-01T00:00:00.000Z',
+        dashboards: [
+          {
+            title: 'Water',
+            targetValue: 8,
+            stepSize: 1,
+            unit: 'glasses',
+            visualType: 'liquidWave' as const,
+            colorTheme: '#3498db',
+          },
+        ],
+      },
+    ];
+    const dailySnapshots = [
+      buildSnapshotFromDashboards('2026-07-01', dashboards),
+      buildSnapshotFromDashboards('2026-07-02', dashboards),
+    ];
+    const before = {
+      dashboards,
+      history,
+      templates,
+      dailySnapshots,
+      lastResetDate: '2026-07-08',
+    };
+    const after = applyClearHistory(before);
+
+    // Chart snapshots wiped
+    expect(after.dailySnapshots).toEqual([]);
+    expect(after.dailySnapshots).not.toBe(before.dailySnapshots);
+
+    // Everything else preserved by value
+    expect(after.dashboards).toBe(before.dashboards);
+    expect(after.dashboards).toHaveLength(1);
+    expect(after.dashboards[0].currentValue).toBe(5);
+    expect(after.history).toBe(before.history);
+    expect(after.history).toHaveLength(1);
+    expect(after.templates).toBe(before.templates);
+    expect(after.templates[0].templateName).toBe('Pack');
+    expect(after.lastResetDate).toBe('2026-07-08');
   });
 
   test('backup payload includes all domains and parse works', () => {

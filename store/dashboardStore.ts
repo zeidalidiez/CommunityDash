@@ -20,6 +20,8 @@ import {
   buildBackupPayload,
   parseBackupPayload,
   emptyDomainState,
+  applyClearHistory,
+  applyClearAllDomains,
   normalizeStepSize,
   BackupPayload,
 } from '../utils/dashboardLogic';
@@ -308,12 +310,12 @@ export const useDashboardStore = create<DashboardState>()(
       },
 
       clearHistory: () => {
-        set({ dailySnapshots: [] });
+        set((state) => applyClearHistory(state));
       },
 
       clearAll: () => {
         set({
-          ...emptyDomainState(),
+          ...applyClearAllDomains(),
           schemaVersion: SCHEMA_VERSION,
         });
       },
